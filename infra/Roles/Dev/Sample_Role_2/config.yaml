@@ -1,0 +1,8 @@
+Parameters:
+  EndTime: "23:59:59" #UTC
+  EndDate: "2024-06-16" #UTC
+  AccountIds: ["123456789012", "098765432109"]
+  SsoSessionDuration: "6H" # If not mentioned, default - 4h will be considered.
+  RoleName: "sample-role-1"
+  UserList: ['<<user_email_addr>>']
+  ManagedPolicies: ['IAMFullAccess']
