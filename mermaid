@@ -1,0 +1,6 @@
+flowchart LR
+    A[Identity Provider\n(Azure AD / Okta / etc.)] --> B[AWS IAM Identity Center]
+    B --> C[DSRP Automation\n(Terraform)]
+    C --> D[Permission Sets]
+    C --> E[Account Assignments]
+    E -->|Expiry reached| F[Revocation\n(Automatically remove)]
