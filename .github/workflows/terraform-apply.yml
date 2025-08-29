@@ -1,0 +1,53 @@
+name: Terraform Apply
+
+# Trigger the workflow manually or on a schedule
+on:
+  workflow_dispatch:                                              # run manually from the Actions tab
+  schedule:
+    - cron: "30 18 * * *"                                         # ~00:00 IST daily (cron is UTC; can be adjusted as needed)
+
+# GitHub OIDC permissions for AWS
+permissions:
+  contents: read
+  id-token: write
+
+# Ensure only one run of this workflow at a time
+concurrency:
+  group: terraform-apply
+  cancel-in-progress: false
+
+# Set environment variables for Terraform, disabling interactive input
+env:
+  TF_INPUT: "0"
+  TF_IN_AUTOMATION: "true"
+
+# Job to apply Terraform configuration
+jobs:
+  apply:
+    runs-on: ubuntu-latest                                        # or self-hosted if needed
+    environment: dev                                              # optional: can be prod + add approvers in Settings > Environments
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)                    # GitHub OIDC to assume role in AWS and get short-term credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}       # values are stored as Actions Secrets (Repo → Settings → Secrets and variables → Actions)
+          aws-region: ${{ secrets.AWS_REGION }}                   # values are stored as Actions Secrets (Repo → Settings → Secrets and variables → Actions)
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3                        # Action version (@v3) → version of the wrapper script (the GitHub Action code), Maintained by HashiCorp
+        # with:                                                   # Optional: specify Terraform version (default is latest)
+        #   terraform_version: 1.5.7
+
+      - name: Terraform Init
+        working-directory: infra/TF_Dev_deployment
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        working-directory: infra/TF_Dev_deployment
+        run: terraform plan -out=tfplan                           # Save the plan to a file to use in the apply step
+
+      - name: Terraform Apply
+        working-directory: infra/TF_Dev_deployment
+        run: terraform apply -auto-approve tfplan

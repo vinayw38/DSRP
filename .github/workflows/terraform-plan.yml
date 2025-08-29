@@ -1,0 +1,60 @@
+name: Terraform CI
+
+# Trigger the workflow on pull requests to main or pushes to main, but only if relevant files change
+on:
+  pull_request:
+    paths: ["**/*.tf", "infra/Roles/**/*.yml", "infra/Roles/**/*.yaml"]
+  push:
+    branches: [ main ]
+    paths: ["**/*.tf", "infra/Roles/**/*.yml", "infra/Roles/**/*.yaml"]
+
+# GitHub OIDC permissions for AWS and read access to the repo for actions
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+
+# Set environment variables for Terraform, disabling interactive input
+env:
+  TF_INPUT: "0"
+  TF_IN_AUTOMATION: "true"
+
+# Job to run terraform fmt, validate & plan to verify the code before merging to main
+jobs:
+  plan:
+    runs-on: ubuntu-latest                                        # or self-hosted if needed
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)                    # GitHub OIDC to assume role in AWS and get short-term credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}       # values are stored as Actions Secrets (Repo → Settings → Secrets and variables → Actions)
+          aws-region: ${{ secrets.AWS_REGION }}                   # values are stored as Actions Secrets (Repo → Settings → Secrets and variables → Actions)
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3                        # Action version (@v3) → version of the wrapper script (the GitHub Action code), Maintained by HashiCorp
+        # with:                                                   # Optional: specify Terraform version (default is latest)
+        #   terraform_version: 1.5.7
+
+      - name: Terraform Init
+        working-directory: infra/TF_Dev_deployment
+        run: terraform init -input=false
+
+      - name: Terraform Fmt
+        working-directory: infra/TF_Dev_deployment
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        working-directory: infra/TF_Dev_deployment
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: infra/TF_Dev_deployment
+        run: terraform plan -out=tfplan                            # Save the plan to a file to use in the apply step
+
+      - name: Upload plan artifact                                 # Upload the plan file as an artifact for later use
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: tfplan
