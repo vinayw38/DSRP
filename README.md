@@ -8,7 +8,7 @@ The goal is to reduce operational overhead and improve security by ensuring that
 
 ## Medium Blog Post
 For a detailed explanation of the concepts and implementation, please refer to the accompanying Medium blog post:
-[Dynamic SSO Role Provisioning for AWS IAM Identity Center](https://medium.com/@yourusername/dynamic-sso-role-provisioning-for-aws-iam-identity-center-1234567890ab)
+[Dynamic SSO Role Provisioning for AWS IAM Identity Center](https://medium.com/@wvinay38/0550d5468a65)
 
 ---
 
